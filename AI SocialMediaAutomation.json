@@ -1,0 +1,554 @@
+{
+  "name": "My workflow 3",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -624,
+        -240
+      ],
+      "id": "6b93451b-2dff-424c-be01-ea713a46c3b1",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f6129a18-b7c8-4021-8d53-0de38f8f0a49",
+              "name": "topic",
+              "value": "Future of Remote Work",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -432,
+        -240
+      ],
+      "id": "e8bba5c7-a47f-423f-bd44-ee84e2b17119",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "key",
+              "value": "AIzaSyDpAJ3yVRHNutrQrjuxu1g96TUEtDobtoQ"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "{\n  \"Content-Type\": \"application/json\",\n  \"x-goog-api-key\": \"AIzaSyDpAJ3yVRHNutrQrjuxu1g96TUEtDobtoQ\"\n}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"contents\": [\n    {\n      \"role\": \"user\",\n      \"parts\": [\n        {\n          \"text\": \"Generate social media content for the topic: {{$json.topic}}. Respond ONLY in this exact JSON format, no extra text: {\\\"topic\\\": \\\"...\\\", \\\"instagram_caption\\\": \\\"...\\\", \\\"linkedin_post\\\": \\\"...\\\", \\\"hashtags\\\": \\\"...\\\", \\\"cta\\\": \\\"...\\\", \\\"image_prompt\\\": \\\"...\\\"}\"\n        }\n      ]\n    }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -224,
+        -240
+      ],
+      "id": "a7971d3c-b4fd-46ed-b07f-1a3c47710a0c",
+      "name": "Generative-AI",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = $input.first().json;\n\n// Handle API errors\nif (response.error || response.status === 503) {\n  return [{ json: {\n    error: \"API unavailable\",\n    raw: JSON.stringify(response),\n    topic: \"\",\n    instagram_caption: \"\",\n    linkedin_post: \"\",\n    hashtags: \"\",\n    cta: \"\",\n    image_prompt: \"\"\n  }}];\n}\n\nconst text = response.candidates[0].content.parts[0].text;\n\nconst jsonMatch = text.match(/\\{[\\s\\S]*\\}/);\nlet parsed;\nif (jsonMatch) {\n  try {\n    parsed = JSON.parse(jsonMatch[0]);\n  } catch(e) {\n    parsed = { error: \"JSON parse failed\", raw: text };\n  }\n} else {\n  parsed = { error: \"No JSON found\", raw: text };\n}\n\nreturn [{ json: {\n  topic: parsed.topic || \"\",\n  instagram_caption: parsed.instagram_caption || \"\",\n  linkedin_post: parsed.linkedin_post || \"\",\n  hashtags: parsed.hashtags || \"\",\n  cta: parsed.cta || \"\",\n  image_prompt: \"professional \" + (parsed.topic || \"\") + \" concept, modern, minimalist, business style\"\n}}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -16,
+        -240
+      ],
+      "id": "c2be58a0-3447-4480-a118-264abdbb105b",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.telegram.org/bot8062048741:AAE956c6tvrfv01XUnMnvXG-JN4JTw6GLSg/sendphoto",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "{\n  \"Content-Type\": \"application/json\"\n}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"chat_id\": \"5057715793\",\n  \"photo\": \"https://image.pollinations.ai/prompt/{{$('Code in JavaScript').item.json.image_prompt}}?width=512&height=512&nologo=true&model=flux\",\n  \"caption\": \"🎯 Topic: {{$('Code in JavaScript').item.json.topic}}\\n\\n📸 {{$('Code in JavaScript').item.json.instagram_caption}}\\n\\n#️⃣ {{$('Code in JavaScript').item.json.hashtags}}\\n\\n👉 {{$('Code in JavaScript').item.json.cta}}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        704,
+        -256
+      ],
+      "id": "3e387c3d-5537-4ad6-b451-5a7eaf56d5e0",
+      "name": "Telegram POST",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "person": "9LBMudp7Be",
+        "text": "={{$('Code in JavaScript').item.json.linkedin_post}}\n\n{{$('Code in JavaScript').item.json.hashtags}}\n\n{{$('Code in JavaScript').item.json.cta}}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.linkedIn",
+      "typeVersion": 1,
+      "position": [
+        1104,
+        -256
+      ],
+      "id": "845b8d0c-1fb9-46bf-a59d-5c88b8bed66c",
+      "name": "Create a post",
+      "credentials": {
+        "linkedInOAuth2Api": {
+          "id": "1fnVTvhsVuRT7dzQ",
+          "name": "LinkedIn account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1am8KHRdMeN3-SJv7kNQ1redmsbFrqmHFLoMPgkLF30Q",
+          "mode": "list",
+          "cachedResultName": "Untitled spreadsheet",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1am8KHRdMeN3-SJv7kNQ1redmsbFrqmHFLoMPgkLF30Q/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1am8KHRdMeN3-SJv7kNQ1redmsbFrqmHFLoMPgkLF30Q/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Topic": "={{$json.topic}}",
+            "Instagram Caption": "={{$json.instagram_caption}}",
+            "LinkedIn Post": "={{$json.linkedin_post}}",
+            "Hashtags": "={{$json.hashtags}}",
+            "CTA": "={{$json.cta}}",
+            "Image URL": "=https://image.pollinations.ai/prompt/{{$('Code in JavaScript').item.json.image_prompt}}",
+            "Time": "={{$now}}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Topic",
+              "displayName": "Topic",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Instagram Caption",
+              "displayName": "Instagram Caption",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "LinkedIn Post",
+              "displayName": "LinkedIn Post",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Hashtags",
+              "displayName": "Hashtags",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "CTA",
+              "displayName": "CTA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Image URL",
+              "displayName": "Image URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Time",
+              "displayName": "Time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1328,
+        -256
+      ],
+      "id": "266a177e-56de-42e9-88b1-24a001d96841",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "TY72HQSd2GFbOTSs",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "9bc5bc18-82cb-4152-8e77-a89b5e355d27",
+              "leftValue": "={{$json.topic}}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        432,
+        -240
+      ],
+      "id": "97a12873-2d46-4eb1-953a-3a8e00baf60a",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1am8KHRdMeN3-SJv7kNQ1redmsbFrqmHFLoMPgkLF30Q",
+          "mode": "list",
+          "cachedResultName": "Untitled spreadsheet",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1am8KHRdMeN3-SJv7kNQ1redmsbFrqmHFLoMPgkLF30Q/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1am8KHRdMeN3-SJv7kNQ1redmsbFrqmHFLoMPgkLF30Q/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Instagram Caption": "={{$json.instagram_caption}}",
+            "LinkedIn Post": "={{$json.linkedin_post}}",
+            "Hashtags": "={{$json.hashtags}}",
+            "CTA": "={{$json.cta}}",
+            "Image URL": "={{$json.image_prompt}}",
+            "Time": "={{$now}}",
+            "Topic": "={{$json.topic}}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Topic",
+              "displayName": "Topic",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Instagram Caption",
+              "displayName": "Instagram Caption",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "LinkedIn Post",
+              "displayName": "LinkedIn Post",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Hashtags",
+              "displayName": "Hashtags",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "CTA",
+              "displayName": "CTA",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Image URL",
+              "displayName": "Image URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Time",
+              "displayName": "Time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1120,
+        16
+      ],
+      "id": "81aea397-1dad-4464-84bf-2857b6923a93",
+      "name": "Error Handling",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "TY72HQSd2GFbOTSs",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.linkedin.com/v2/ugcPosts",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "{\n  \"Authorization\": \"Bearer AQUteuVtiiFZgYWjGLnMReL8YmFhK7UhkUGAMqOy0J8b4A-_GdpigDZAknRdN0vl7Yek2Z5NfkokAHb6QI5WlDrX5HJPnCtVzXiXDn7eDLZzuYnE5ItwG69smFVL2ui8zpiL-KqwybKV-8ofb1y3xP1YMpTnzk_Vrfno_UDzTj-EXzfLPcgDv6wj473ZQ-DCYBTTDBOEk_rR8NrDGYs3jWA3sPcSLoDGC5Rl_kW5HFuscWeKwpKZfMppRwT9cqEZEbxgvHGaS0AsTpvHXAumEE8DCWFtraUGtX1HOQz_qrAoKIZ7V2JAevanTLT7pXLTfmOj8XHf9khOEJrT0nXLIIYMggcTfw\",\n  \"Content-Type\": \"application/json\",\n  \"X-Restli-Protocol-Version\": \"2.0.0\"\n}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"author\": \"urn:li:person:9LBNudp7Be\",\n  \"lifecycleState\": \"PUBLISHED\",\n  \"specificContent\": {\n    \"com.linkedin.ugc.ShareContent\": {\n      \"shareCommentary\": {\n        \"text\": \"{{$('Code in JavaScript').item.json.linkedin_post}}\\n\\n{{$('Code in JavaScript').item.json.hashtags}}\\n\\n{{$('Code in JavaScript').item.json.cta}}\"\n      },\n      \"shareMediaCategory\": \"ARTICLE\",\n      \"media\": [\n        {\n          \"status\": \"READY\",\n          \"description\": {\n            \"text\": \"{{$('Code in JavaScript').item.json.topic}}\"\n          },\n          \"originalUrl\": \"https://image.pollinations.ai/prompt/{{$('Code in JavaScript').item.json.image_prompt}}?width=512&height=512&nologo=true&model=flux\",\n          \"title\": {\n            \"text\": \"{{$('Code in JavaScript').item.json.topic}}\"\n          }\n        }\n      ]\n    }\n  },\n  \"visibility\": {\n    \"com.linkedin.ugc.MemberNetworkVisibility\": \"PUBLIC\"\n  }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        896,
+        -256
+      ],
+      "id": "10e157ff-e662-4056-a176-d6672c434dd0",
+      "name": "HTTP Request",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "url": "=https://image.pollinations.ai/prompt/{{$('Code in JavaScript').item.json.image_prompt}}?width=512&height=512&nologo=true&model=flux",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        192,
+        -240
+      ],
+      "id": "a3d5e95e-b557-4530-9778-8c21e4a81bcf",
+      "name": "Generate image"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Generative-AI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generative-AI": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Generate image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram POST": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a post": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Telegram POST",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Handling",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Create a post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate image": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "2b6c4e59-43ad-4e17-b00e-fca09e3ac891",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "b8d7b8fed50d03018ffeb54cad655a50c5a64cbe9458e75b136cb8f7d0423b0a"
+  },
+  "id": "Q77kQbeTummDqheZ",
+  "tags": []
+}
